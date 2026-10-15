@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="midnight">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<meta name="description" content="ChessBot — play a home-grown alpha-beta chess engine in your browser.">
+<title>ChessBot · alpha-beta engine</title>
+<link rel="stylesheet" href="/static/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='78' font-size='82'>♞</text></svg>">
+</head>
+<body>
+<div class="app">
+
+  <header class="top">
+    <div class="brand">
+      <div class="mark" aria-hidden="true">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <g style="--piece-fill:#dfe9ff;--piece-stroke:#0d1119">
+            <path d="M22 48C25 40 30 33 40 27L38 15L49 23L55 22L51 12L60 15C68 20 72 30 73 44C74 58 75 70 77 80H46C43 70 39 62 32 56C26 52 22 51 22 48z"
+                  fill="#dfe9ff" stroke="#0d1119" stroke-width="2.6" stroke-linejoin="round"/>
+            <rect x="21" y="80" width="58" height="13" rx="6.5" fill="#dfe9ff" stroke="#0d1119" stroke-width="2.6"/>
+            <circle cx="41" cy="35" r="2.8" fill="#0d1119"/>
+          </g>
+        </svg>
+      </div>
+      <div>
+        <h1>Chess<span>Bot</span></h1>
+        <p>alpha-beta engine · python-chess · playable in the browser</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button class="chip ghost" id="toggle-theme" title="Switch board theme">Tournament</button>
+      <button class="chip ghost" id="copy-pgn" title="Copy the game as PGN">Copy PGN</button>
+      <button class="chip ghost" id="copy-fen" title="Copy the current position">Copy FEN</button>
+    </div>
+  </header>
+
+  <div class="banner" id="banner">
+    <strong>⚠</strong><span>The engine is offline.</span>
+  </div>
+
+  <div class="workspace">
+    <!-- ---------------------------------------------------------- board -->
+    <div class="board-area">
+      <div class="evalbar" title="Engine evaluation">
+        <div class="fill" id="eval-fill"></div>
+        <div class="mid"></div>
+        <div class="readout black">black</div>
+        <div class="readout white">white</div>
+      </div>
+
+      <div class="board-shell">
+        <div class="player-strip" id="player-top">
+          <span class="avatar bot">♞</span>
+          <span class="who">Bot</span>
+          <span class="thinking" id="thinking-top"><i></i><i></i><i></i></span>
+          <span class="meta"><span id="top-level-label"></span><span id="top-colour">black</span></span>
+        </div>
+
+        <div class="board-wrap">
+          <div id="board" role="grid" aria-label="Chess board"></div>
+          <div class="hint-layer" id="hints"></div>
+          <svg class="arrow-layer" id="arrows"></svg>
+          <div id="promotion" class="promo hidden" role="dialog" aria-label="Choose a promotion piece"></div>
+          <div class="board-result hidden" id="result">
+            <div>
+              <h2 id="result-title">Game over</h2>
+              <p id="result-detail"></p>
+              <div class="btn-row" style="justify-content:center">
+                <button class="chip primary" id="result-rematch">Rematch</button>
+                <button class="chip" id="result-review">Review game</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="player-strip" id="player-bottom">
+          <span class="avatar">♔</span>
+          <span class="who">You</span>
+          <span class="thinking" id="thinking-bottom"><i></i><i></i><i></i></span>
+          <span class="meta"><span id="bottom-level-label"></span><span id="bottom-colour">white</span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---------------------------------------------------------- panels -->
+    <div class="side">
+
+      <section class="card">
+        <div class="body">
+          <div class="headline">
+            <span class="turn" id="headline-turn">White to move</span>
+            <span class="eval-value" id="eval-value">+0.00</span>
+          </div>
+          <div class="headline"><span class="sub" id="headline-sub">make your move</span></div>
+          <div class="btn-row" style="margin-top:12px">
+            <button class="chip primary" id="new-game">New game</button>
+            <button class="chip" id="undo">Take back</button>
+            <button class="chip" id="hint">Hint</button>
+            <button class="chip ghost" id="flip" title="Flip the board">Flip</button>
+            <button class="chip ghost" id="swap-sides" title="Play the other colour">Swap sides</button>
+            <button class="chip ghost" id="resign">Resign</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <header>
+          <h3>Bot strength</h3>
+          <span class="spacer"></span>
+          <span class="hint-text" style="margin:0">est. Elo</span>
+        </header>
+        <div class="body">
+          <div class="level-grid" id="level-grid"></div>
+          <div class="level-blurb" id="level-blurb">Pick a level to see what it does.</div>
+        </div>
+      </section>
+
+      <section class="card">
+        <header>
+          <h3>Engine</h3>
+          <span class="spacer"></span>
+          <span class="hint-text" style="margin:0" id="pv-badge"></span>
+        </header>
+        <div class="body">
+          <div class="stats">
+            <div class="stat"><div class="k">depth</div><div class="v" id="stat-depth">—</div></div>
+            <div class="stat"><div class="k">nodes</div><div class="v" id="stat-nodes">—</div></div>
+            <div class="stat"><div class="k">speed</div><div class="v" id="stat-nps">—</div></div>
+            <div class="stat"><div class="k">time</div><div class="v" id="stat-time">—</div></div>
+          </div>
+          <div class="pv" id="pv"><span class="empty">The engine line will appear here.</span></div>
+          <div class="chip-row" style="margin-top:11px">
+            <button class="chip on" id="toggle-coach">Coach on</button>
+            <button class="chip on" id="toggle-eval">Live eval on</button>
+            <button class="chip on" id="toggle-sound">Sound on</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <header>
+          <h3>Moves</h3>
+          <span class="spacer"></span>
+          <span class="hint-text" style="margin:0">click to review</span>
+        </header>
+        <div class="moves" id="moves"><div class="empty">No moves yet — make your first move.</div></div>
+      </section>
+
+      <section class="card">
+        <header><h3>Position</h3></header>
+        <div class="body">
+          <label class="field" for="fen-input">load a FEN</label>
+          <input type="text" id="fen-input" placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" spellcheck="false">
+          <div class="btn-row" style="margin-top:9px">
+            <button class="chip" id="load-fen">Load position</button>
+          </div>
+          <div class="hint-text">
+            Shortcuts: <span class="kbd">N</span> new · <span class="kbd">U</span> take back ·
+            <span class="kbd">F</span> flip · <span class="kbd">H</span> hint ·
+            <span class="kbd">←</span>/<span class="kbd">→</span> review
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <p class="foot">
+    Engine: iterative deepening PVS + transposition table + quiescence search, in pure Python —
+    roughly 20k positions/second on a laptop CPU. The bot opens from the public-domain
+    <em>chess-openings</em> dataset (3,844 named ECO lines), so the early moves are real theory.<br>
+    Everything here — engine, board, coaching — lives in this repo. Run the desktop version with
+    <code>python3 ChessBot.py</code>.
+  </p>
+</div>
+
+<div class="toast-stack" id="toasts" aria-live="polite"></div>
+
+<script type="module" src="/static/app.js"></script>
+</body>
+</html>

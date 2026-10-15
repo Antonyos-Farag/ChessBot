@@ -1,0 +1,5 @@
+# ChessBot — engine + web app + desktop app
+chess>=1.10            # python-chess: board, move generation, PGN/FEN, Zobrist hashing
+
+# Development only
+pytest>=7.0            # test runner (the suite also runs with plain unittest)
